@@ -50,12 +50,12 @@ function M.class_camel_to_snake(str)
 end
 
 -- M.find_entry_with_disabled = function(template, full_path, relative_path, filename, disable_specific)
-M.find_entry = function(template, opts)
+M.find_entry = function(template, opts, callback)
 	local disabled = opts.disable_specific or {}
 
 	for _, entry in ipairs(template) do
 		if not (M.included_in_array(entry.pattern, disabled)) and M.compare_regexp(opts.full_path, entry.pattern) then
-			return entry.content(opts.relative_path, opts.filename)
+			return entry.content(opts.relative_path, opts.filename, callback)
 		end
 	end
 

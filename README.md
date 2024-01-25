@@ -47,31 +47,31 @@ An example of a basic template for solidity:
 ```lua
 local utils = require("new-file-template.utils")
 
-local function base_template(path, filename)
+local function base_template(path, filename, callback)
 	local contract_name = vim.split(filename, "%.")[1]
 	local solidity_version = vim.g.solc_version or "0.8.14"
 
-	return [[
+	callback([[
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ]] .. solidity_version .. [[;
 
 contract ]] .. contract_name .. [[ {
   |cursor|
-}]]
+}]])
 end
 
-local function helper_template(path, filename) -- just an example
-  return "Created a file in " .. path .. " called " .. filename
+local function helper_template(path, filename, callback) -- just an example
+  callback("Created a file in " .. path .. " called " .. filename)
 end
 
-return function(opts)
+return function(opts, callback)
 	local template = {
 		{ pattern = "helper/.*", content = helper_template },
 		{ pattern = ".*", content = base_template },
 	}
 
-	return utils.find_entry(template, opts)
+	return utils.find_entry(template, opts, callback)
 end
 ```
 
@@ -83,22 +83,23 @@ The template file always should return a function that:
   - Return the template string if it found it
   - Return false is don't find nothing
 
-The `utils.find_entry` function receives an table with:
+The `utils.find_entry` function receives a table of objects each with:
   - pattern: the pattern that triggers the template
-  - content: a function that return the template string
+  - content: a function that takes in filepath, filename, and the callback to pass the final text into
 
-The content function will always receive the path to the file and the filename as parameters. It should ALWAYS return a string.
+The content function will always receive the path to the file, the filename, and the template callback as parameters. It has no return value.
 
-If the content return `|cursor|` inside the string, it will position the cursor there.
+If the content invokes `|cursor|` inside the template string, it will position the cursor there.
 
 ## What we can do with it?
 
-The content function can do anything.  Can ask the user for some input, can call an API to get the content.  The sky is the limit.
+The content function can do anything.  Can ask the user for some input, can call an API to get the content.  The sky is the limit. If you wish to cancel the act of inserting the template, just skip invoking the callback function.
 
 ## Quickly creating a new template
 
 Here is an example of me creating a JavaScript template.
 
+(Note this gif uses the old deprecated API, TODO: remake gif)
 ![image 2](https://i.imgur.com/H1pUkXw.gif)
 
 ## Utils to help you creating your own templates
