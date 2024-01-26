@@ -14,7 +14,7 @@ function M.setup(opts)
     })
 
     if not opts.disable_autocmd then
-        vim.api.nvim_create_autocmd("BufEnter", {
+        vim.api.nvim_create_autocmd("BufWinEnter", {
             group = vim.api.nvim_create_augroup("NewFileTemplate", { clear = true }),
             pattern = "*",
             callback = M.on_buf_enter
@@ -31,6 +31,8 @@ function M.setup(opts)
 end
 
 function M.on_buf_enter(ev)
+    print("Triggered")
+    print(vim.inspect(ev))
     if vim.b.template_verified == 1 then
         return
     end
@@ -66,9 +68,9 @@ function M.open_user_config(filetype)
 end
 
 function M.insert_text(template, ev)
-    vim.fn.win_gotoid(vim.fn.bufwinid(ev.buf))
-
+    vim.api.nvim_set_current_buf(ev.buf)
     local current_buffer = vim.api.nvim_get_current_buf()
+
     template = template:gsub("\\n", "\n")
 
     local lines = vim.split(template, "\n")
