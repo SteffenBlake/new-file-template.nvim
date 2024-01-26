@@ -14,12 +14,11 @@ function M.setup(opts)
     })
 
     if not opts.disable_autocmd then
-        vim.cmd([[
-      augroup NewFileTemplate
-        autocmd!
-        autocmd BufEnter * :lua require'new-file-template'.on_buf_enter()
-      augroup END
-    ]])
+        vim.api.nvim_create_autocmd("BufEnter", {
+            group = vim.api.nvim_create_augroup("NewFileTemplate", { clear = true }),
+            pattern = "*",
+            callback = M.on_buf_enter
+        })
     end
 
     vim.cmd([[
@@ -31,25 +30,23 @@ function M.setup(opts)
   ]])
 end
 
-function M.on_buf_enter()
+function M.on_buf_enter(ev)
     if vim.b.template_verified == 1 then
         return
     end
 
     vim.b.template_verified = 1
 
-    local bufnr = vim.fn.bufnr("%")
-
-    if vim.fn.buflisted(bufnr) == 0 or vim.fn.bufname(bufnr) == "" then
+    if vim.fn.buflisted(ev.buf) == 0 or vim.fn.bufname(ev.buf) == "" then
         return
     end
 
-    local lines = vim.fn["getline"](1, "$")
+    local lines = vim.fn.getline(1, "$")
     if not (lines[1] == "" and #lines == 1) then
         return
     end
 
-    M.insert_template()
+    M.insert_template(ev)
 end
 
 function M.open_user_config(filetype)
@@ -68,7 +65,9 @@ function M.open_user_config(filetype)
     vim.cmd("edit " .. template_path)
 end
 
-function M.insert_text(template)
+function M.insert_text(template, ev)
+    vim.fn.win_gotoid(vim.fn.bufwinid(ev.buf))
+
     local current_buffer = vim.api.nvim_get_current_buf()
     template = template:gsub("\\n", "\n")
 
@@ -106,7 +105,7 @@ function M.insert_text(template)
     end
 end
 
-function M.insert_template()
+function M.insert_template(ev)
     local new_file_relative_path = vim.fn.fnamemodify(vim.fn.expand("%"), ":~:.")
     local filename = vim.fn.fnamemodify(new_file_relative_path, ":t")
     local path = vim.fn.fnamemodify(new_file_relative_path, ":h")
@@ -120,9 +119,9 @@ function M.insert_template()
     }
 
     local user_template_loaded, template_for_filetype_user = pcall(require, "templates." .. new_file_filetype)
-
+    local function callback(template) M.insert_text(template, ev) end
     if user_template_loaded then
-        template_for_filetype_user(opts_for_template, M.insert_text)
+        template_for_filetype_user(opts_for_template, callback)
         return
     end
 
@@ -133,7 +132,7 @@ function M.insert_template()
     local loaded, template_for_filetype = pcall(require, "new-file-template.templates." .. new_file_filetype)
 
     if loaded then
-        template_for_filetype(opts_for_template, M.insert_text)
+        template_for_filetype(opts_for_template, callback)
     end
 end
 
