@@ -31,8 +31,6 @@ function M.setup(opts)
 end
 
 function M.on_buf_enter(ev)
-    print("Triggered")
-    print(vim.inspect(ev))
     if vim.b.template_verified == 1 then
         return
     end
